@@ -1,6 +1,9 @@
 
 
-#  Occupancy Detection using Room Attributes( such as Temperature, humidity etc):
+# Occupancy Detection using Room Attributes( such as Temperature, humidity etc):
+
+The following project is about implementing a prediction model to detect room-oocupany based on certain features such as Room temperature etc. It is a binary classification task to detect weather there is a person in the room or not. 
+
 
 
 
