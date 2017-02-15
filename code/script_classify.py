@@ -33,15 +33,18 @@ if __name__ == '__main__':
                  #'L2 Logistic Regression': algs.LogitReg({'regularizer': 'l2'}),
                  #'Logistic Alternative': algs.LogitRegAlternative(),                 
                  #'Neural Network': algs.NeuralNet({'epochs': 100})
-                 'RBF ': algs.RBF()
+                 #'RBF_linearRegression ': algs.RBF_linearRegression(),
+                 'RBF_LogitReg': algs.RBF_LogitReg(),
+                 'LogitReg': algs.LogitReg()
+                 
                 }  
     numalgs = len(classalgs)    
 
     parameters = (
-        {'regwgt': 0.0, 'nh': 4},
-        {'regwgt': 0.01, 'nh': 8},
-        {'regwgt': 0.05, 'nh': 16},
-        {'regwgt': 0.1, 'nh': 32},
+        {'beta':0.5},
+        #{'beta':1.0},
+        #{'beta':2.0}
+        
                       )
     numparams = len(parameters)
         
@@ -50,7 +53,8 @@ if __name__ == '__main__':
         errors[learnername] = np.zeros((numparams,numruns))
                 
     for r in range(numruns):
-    	trainset, testset = dtl.load_susy(trainsize,testsize)
+    	#trainset, testset = dtl.load_susy(trainsize, testsize)
+        trainset, testset = dtl.load_occupancy(trainsize,testsize)
     	#trainset, testset = dtl.load_susy_complete(trainsize,testsize)
 
         print('Running on train={0} and test={1} samples for run {2}').format(trainset[0].shape[0], testset[0].shape[0],r)
@@ -79,7 +83,12 @@ if __name__ == '__main__':
                 besterror = aveerror
                 bestparams = p
 
+
         # Extract best parameters        
         learner.reset(parameters[bestparams])
     	print 'Best parameters for ' + learnername + ': ' + str(learner.getparams())
     	print 'Average error for ' + learnername + ': ' + str(besterror) + ' +- ' + str(1.96*np.std(errors[learnername][bestparams,:])/math.sqrt(numruns))
+
+    for learnername, learner in classalgs.iteritems():
+        print learnername
+        print errors[learnername]

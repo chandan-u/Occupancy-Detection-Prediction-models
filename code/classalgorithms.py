@@ -167,13 +167,13 @@ class LogitRegAlternative(Classifier):
 
 
 
-class RBF(Classifier):
+class RBF_linearRegression(Classifier):
     """
     Linear Regression with ridge regularization
     Simply solves (X.T X/t + lambda eye)^{-1} X.T y/t
     """
     def __init__( self, parameters={} ):
-        self.params = {'regwgt': 0.01}
+        self.params = {'regwgt': 0.01, 'beta':0.05,}
         self.reset(parameters)
         self.beta = 1        
     def reset(self, parameters):
@@ -214,4 +214,185 @@ class RBF(Classifier):
         ytest[ytest > 0] = 1     
         ytest[ytest < 0] = 0    
         return ytest
+
+
+
+class RBF():
+    """
+    Linear Regression with ridge regularization
+    Simply solves (X.T X/t + lambda eye)^{-1} X.T y/t
+    """
+    def __init__( self, parameters={} ):
+        self.params = {'regwgt': 0.01}
+        self.beta = 1        
+
+
+
+    def distance(self, X, centers):
+        datapoint = X
+        for i, center in enumerate( centers):
+            X[i] = np.exp(np.dot(-self.beta,utils.euclidian(datapoint, center) ))
+        
+        return X
+
+    def transform(self, Data):
+        """ Learns using the traindata """
+        
+        
+        # Ensure ytrain is {-1,1}
+        numFeatures = Data.shape[1]
+        self.centers = random.sample(Data, numFeatures)
  
+                       
+        for i, X in enumerate(Data):
+            Data[i] = self.distance(X, self.centers)
+            
+        
+         
+        return Data
+
+
+class LogitReg(Classifier):
+
+    def __init__( self, parameters={} ):
+        # Default: no regularization
+        self.params = {'regwgt': 0.0, 'regularizer': 'None'}
+        self.reset(parameters)
+
+    def reset(self, parameters):
+        self.resetparams(parameters)
+        self.weights = None
+        if self.params['regularizer'] is 'l1':
+            self.regularizer = (utils.l1, utils.dl1)
+        elif self.params['regularizer'] is 'l2':
+            self.regularizer = (utils.l2, utils.dl2)
+        else:
+            self.regularizer = (lambda w: 0, lambda w: np.zeros(w.shape,))
+     
+    # TODO: implement learn and predict functions 
+
+    def probabilityOfOne(self, weights, Xtrain):
+
+        return 1/( 1 + np.exp(np.dot(weights.T, Xtrain))) 
+
+
+    
+
+
+    def learn(self, Xtrain, ytrain):
+       """ Learns using the traindata """
+
+       # Initial random weights ( Better if initialized using linear regression optimal wieghts)
+       #Xless = Xtrain[:,self.params['features']]
+       weights = np.dot(np.dot(np.linalg.inv(np.dot(Xtrain.T,Xtrain)), Xtrain.T),ytrain)
+
+
+
+       # w(t+1) = w(t) + eta * v
+       #pone = self.probabilityOfOne(self.weights, Xtrain[i])
+       p = utils.sigmoid(np.dot(Xtrain, weights))
+       tolerance = 0.1
+       #error = utils.crossentropy( Xtrain, ytrain, self.weights)
+       error = np.linalg.norm(np.subtract(ytrain, p))
+       err = np.linalg.norm(np.subtract(ytrain,  p))
+       #err = 0
+       #soldweights =self.weights
+       while np.abs(error - err) < tolerance:
+           P = np.diag(p)
+           
+           I = np.identity(P.shape[0])
+           #Hess_inv =-np.linalg.inv(np.dot(np.dot(np.dot(Xtrain.T,self.P),np.subtract(I,self.P)),Xtrain))
+           #Hess_inv=-np.linalg.inv(np.dot(np.dot(Xtrain.T,np.dot(P,(I-P))),Xtrain))
+           Hess_inv=-np.linalg.inv(np.dot(np.dot(Xtrain.T,np.dot(P,(I-P))),Xtrain))
+           First_Grad= np.dot(Xtrain.T, np.subtract(ytrain,p))#np.dot(Xtrain.T, np.subtract(ytrain, p))
+           #oldweights = self.weights
+           weights= weights - (np.dot(Hess_inv, First_Grad))
+           p = utils.sigmoid(np.dot(Xtrain, weights))
+
+           # error = utils.crossentropy(Xtrain, ytrain, self.weights)
+           err = np.linalg.norm(np.subtract(ytrain,  p))
+
+       self.weights = weights
+
+    def predict(self, Xtest):
+        ytest = utils.sigmoid(np.dot(Xtest, self.weights))
+        ytest = utils.threshold_probs(ytest)
+        return ytest
+        
+
+class RBF_LogitReg(Classifier):
+
+    def __init__( self, parameters={} ):
+        # Default: no regularization
+        self.params = {'regwgt': 0.01, 'beta':0.05, 'regularizer':None}
+        self.reset(parameters)
+
+    def reset(self, parameters):
+        self.resetparams(parameters)
+        self.weights = None
+        if self.params['regularizer'] is 'l1':
+            self.regularizer = (utils.l1, utils.dl1)
+        elif self.params['regularizer'] is 'l2':
+            self.regularizer = (utils.l2, utils.dl2)
+        else:
+            self.regularizer = (lambda w: 0, lambda w: np.zeros(w.shape,))
+     
+    # TODO: implement learn and predict functions 
+
+    def probabilityOfOne(self, weights, Xtrain):
+
+        return 1/( 1 + np.exp(np.dot(weights.T, Xtrain))) 
+
+
+    
+
+
+    def learn(self, Xtrain, ytrain):
+       """ Learns using the traindata """
+
+       # Initial random weights ( Better if initialized using linear regression optimal wieghts)
+       #Xless = Xtrain[:,self.params['features']]
+       Rbf = RBF()
+       Xtrain = Rbf.transform(Xtrain)
+       weights = np.dot(np.dot(np.linalg.inv(np.dot(Xtrain.T,Xtrain)), Xtrain.T),ytrain)
+
+
+
+       # w(t+1) = w(t) + eta * v
+       #pone = self.probabilityOfOne(self.weights, Xtrain[i])
+       p = utils.sigmoid(np.dot(Xtrain, weights))
+       tolerance = 0.1
+       #error = utils.crossentropy( Xtrain, ytrain, self.weights)
+       error = np.linalg.norm(np.subtract(ytrain, p))
+       err = np.linalg.norm(np.subtract(ytrain,  p))
+       #err = 0
+       #soldweights =self.weights
+       while np.abs(error - err) < tolerance:
+           P = np.diag(p)
+           
+           I = np.identity(P.shape[0])
+           #Hess_inv =-np.linalg.inv(np.dot(np.dot(np.dot(Xtrain.T,self.P),np.subtract(I,self.P)),Xtrain))
+           #Hess_inv=-np.linalg.inv(np.dot(np.dot(Xtrain.T,np.dot(P,(I-P))),Xtrain))
+           Hess_inv=-np.linalg.inv(np.dot(np.dot(Xtrain.T,np.dot(P,(I-P))),Xtrain))
+           First_Grad= np.dot(Xtrain.T, np.subtract(ytrain,p))#np.dot(Xtrain.T, np.subtract(ytrain, p))
+           #oldweights = self.weights
+           weights= weights - (np.dot(Hess_inv, First_Grad))
+           p = utils.sigmoid(np.dot(Xtrain, weights))
+
+           # error = utils.crossentropy(Xtrain, ytrain, self.weights)
+           err = np.linalg.norm(np.subtract(ytrain,  p))
+
+       self.weights = weights
+
+    def predict(self, Xtest):
+        Rbf = RBF()
+        Xtest = Rbf.transform(Xtest)
+        ytest = utils.sigmoid(np.dot(Xtest, self.weights))
+        ytest = utils.threshold_probs(ytest)
+        return ytest
+        
+
+
+
+
+

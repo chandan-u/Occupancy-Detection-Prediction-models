@@ -4,6 +4,19 @@ import numpy as np
 
 ####### Main load functions
 
+
+def load_occupancy(trainsize=5000, testsize=5000):
+    """ A occupancy detection dataset """
+    
+    filename = './datasets/processed_training.csv'
+
+    
+    dataset = loadcsv(filename)
+    trainset, testset = splitdataset(dataset,trainsize, testsize)    
+    return trainset,testset
+
+
+
 def load_blog(trainsize=5000, testsize=5000):
     """ A blogging dataset """
     if trainsize + testsize < 5000:
@@ -109,9 +122,10 @@ def splitdataset(dataset, trainsize, testsize, testdataset=None, featureoffset=N
             Xtest[:,ii] = np.divide(Xtest[:,ii], maxval)
                         
     # Add a column of ones; done after to avoid modifying entire dataset
-    Xtrain = np.hstack((Xtrain, np.ones((Xtrain.shape[0],1))))
-    Xtest = np.hstack((Xtest, np.ones((Xtest.shape[0],1))))
-                              
+    #Xtrain = np.hstack((Xtrain, np.ones((Xtrain.shape[0],1))))
+    #Xtest = np.hstack((Xtest, np.ones((Xtest.shape[0],1))))
+    print Xtrain.shape
+    print ytrain.shape
     return ((Xtrain,ytrain), (Xtest,ytest))
 
 
